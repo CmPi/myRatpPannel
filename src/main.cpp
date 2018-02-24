@@ -18,6 +18,8 @@
 #include <U8g2lib.h>      // make sure to add U8g2 library and restart Arduino IDE  
 #include <SPI.h>
 #include <Wire.h>
+#include <Bridge.h>
+#include <HttpClient.h>
 
 #define OLED_SDA  2
 #define OLED_SCL 14
