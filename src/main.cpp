@@ -38,8 +38,8 @@ void setup_wifi() {
   Serial.print("Connecting to ");
   Serial.println(wifi_ssid);
   */
-  WiFi.hostname(WiFi_hostname);
-  WiFi.begin(wifi_ssid, wifi_password);
+  WiFi.hostname(WIFI_HOSTNAME);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -49,7 +49,10 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 
   Serial.print("Configuring OTA device...");
-  TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
+
+  #if #TELNET
+   TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
+  #endif
 
   ArduinoOTA.onStart([]() {Serial.println("OTA starting...");});
   ArduinoOTA.onEnd([]() {Serial.println("OTA update finished!");Serial.println("Rebooting...");});
