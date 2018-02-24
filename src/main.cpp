@@ -28,7 +28,7 @@ const char *TXT_WELCOME  = "RATP v0.1";  // µ scroll this text from right to le
 const char *TXT_HOSTNAME = "micro_ratp";  // scroll this text from right to left
 
 const char *text = "cmpi_bus";  // scroll this text from right to left
-//test
+
 //Necesary to make Arduino Software autodetect OTA device
 WiFiServer TelnetServer(8266);
 
@@ -44,7 +44,7 @@ void setup_wifi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+//    Serial.print(".");
   }
   
   #if DEBUG_SERIAL_SUPPORT
