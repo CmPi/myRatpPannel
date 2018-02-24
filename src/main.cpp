@@ -18,8 +18,6 @@
 #include <U8g2lib.h>      // make sure to add U8g2 library and restart Arduino IDE  
 #include <SPI.h>
 #include <Wire.h>
-#include "config.h"
-#include "wifi.h"
 
 #define OLED_SDA  2
 #define OLED_SCL 14
@@ -37,7 +35,7 @@ WiFiServer TelnetServer(8266);
 void setup_wifi() {
   delay(250);
 
-  #ifdef FEATURE_DEBUG
+  #if DEBUG_SERIAL_SUPPORT
    Serial.print("Connecting to ");
    Serial.println(wifi_ssid);
   #endif
@@ -49,13 +47,13 @@ void setup_wifi() {
     Serial.print(".");
   }
   
-  #ifdef FEATURE_DEBUG
+  #if DEBUG_SERIAL_SUPPORT
    Serial.print("   IP address: ");
    Serial.println(WiFi.localIP());
    Serial.print("Configuring OTA device...");
   #endif
 
-  #ifdef FEATURE_TELNET
+  #if TELNET_SUPPORT
    TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
   #endif
 
