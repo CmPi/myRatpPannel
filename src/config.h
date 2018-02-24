@@ -1,7 +1,7 @@
 
 #define OTA true
 
-#define TELNET false
+#define FEATURE_TELNET false
 
 #define TIME true
 

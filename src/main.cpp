@@ -50,7 +50,7 @@ void setup_wifi() {
 
   Serial.print("Configuring OTA device...");
 
-  #if #TELNET
+  #if FEATURE_TELNET
    TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
   #endif
 
