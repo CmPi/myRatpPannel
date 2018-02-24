@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/settings.json
 .travis.yml
+src/wifi.h
