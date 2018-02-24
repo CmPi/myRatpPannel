@@ -69,7 +69,10 @@ void setup_wifi() {
     else if (error == OTA_END_ERROR) Serial.println("End Failed");
   });
   ArduinoOTA.begin();
-  Serial.println("Wifi OK");
+
+  #if DEBUG_SERIAL_SUPPORT  
+   Serial.println("Wifi OK");
+  #endif 
 }
 
 void setup_oled() {
@@ -88,10 +91,10 @@ void setup() {
  
 void loop() {
   ArduinoOTA.handle();
-  u8g2.drawStr(0,10,text);  // write something to the internal memory
+  u8g2.drawStr(0,0,text);  // write something to the internal memory
   IPAddress myip= WiFi.localIP();
   String sFullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
-  u8g2.drawStr(0,28,sFullip.c_str());  // write something to the internal memory
+  u8g2.drawStr(0,16,sFullip.c_str());  // write something to the internal memory
   u8g2.sendBuffer();          // transfer internal memory to the display
   delay(1000);  
 }
