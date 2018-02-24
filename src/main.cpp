@@ -8,6 +8,8 @@
 ////                                                                                                          ////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "config/all.h"
+
 #include <ESP8266WiFi.h>  //For ESP8266
 #include <ESP8266mDNS.h>  //For OTA
 #include <WiFiUdp.h>      //For OTA
@@ -34,10 +36,12 @@ WiFiServer TelnetServer(8266);
 
 void setup_wifi() {
   delay(250);
-  /*
-  Serial.print("Connecting to ");
-  Serial.println(wifi_ssid);
-  */
+
+  #ifdef FEATURE_DEBUG
+   Serial.print("Connecting to ");
+   Serial.println(wifi_ssid);
+  #endif
+
   WiFi.hostname(WIFI_HOSTNAME);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
@@ -45,12 +49,13 @@ void setup_wifi() {
     Serial.print(".");
   }
   
-  Serial.print("   IP address: ");
-  Serial.println(WiFi.localIP());
+  #ifdef FEATURE_DEBUG
+   Serial.print("   IP address: ");
+   Serial.println(WiFi.localIP());
+   Serial.print("Configuring OTA device...");
+  #endif
 
-  Serial.print("Configuring OTA device...");
-
-  #if FEATURE_TELNET
+  #ifdef FEATURE_TELNET
    TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
   #endif
 
@@ -69,7 +74,7 @@ void setup_wifi() {
   Serial.println("Wifi OK");
 }
 
-void setup_lcd() {
+void setup_oled() {
  u8g2.begin();
  u8g2.clearBuffer();          // clear the internal memory
  u8g2.setFont(u8g2_font_8x13B_mf); // choose a suitable font
@@ -79,7 +84,7 @@ void setup_lcd() {
  
 void setup() {
   Serial.begin(9600);
-  setup_lcd();
+  setup_oled();
   setup_wifi();  
  }
  
