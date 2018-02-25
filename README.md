@@ -7,11 +7,12 @@ Affichage des prochains passages d'une ligne de bus ou de m√©tro sur un module √
 ## Hardware
 
 Wemos TTGO ESP8266 with 0.91 Inch OLED 
+
 https://www.banggood.com/Wemos-TTGO-ESP8266-0_91-Inch-OLED-For-Arduino-Nodemcu-p-1205904.html
 
 
 ## Compile
 
-Installer dans Platformio les librairies :
-= U8g2 
-= Bridge
+Installer, dans Platformio les librairies suivantes :
+- U8g2 
+-  Bridge
