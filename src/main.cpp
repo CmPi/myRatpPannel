@@ -31,22 +31,34 @@ const char *TXT_HOSTNAME = "micro_ratp";  // scroll this text from right to left
 
 const char *text = "cmpi_bus";  // scroll this text from right to left
 
+int iColScan = 64;
+
 //Necesary to make Arduino Software autodetect OTA device
 WiFiServer TelnetServer(8266);
+
+void Scan() {
+ if (iColScan>96) // 112
+  iColScan = 32;
+ u8g2.drawStr(iColScan,16," * ");  // write something to the internal memory
+ u8g2.sendBuffer();          // transfer internal memory to the display
+ iColScan=iColScan+2;  
+}
+
 
 void setup_wifi() {
   delay(250);
 
   #if DEBUG_SERIAL_SUPPORT
    Serial.print("Connecting to ");
-   Serial.println(wifi_ssid);
+   Serial.println(WIFI_SSID);
   #endif
 
-  WiFi.hostname(WIFI_HOSTNAME);
+ // WiFi.hostname(WIFI_HOSTNAME);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
+//    Scan();
     delay(500);
-//    Serial.print(".");
+    Serial.print(".");
   }
   
   #if DEBUG_SERIAL_SUPPORT
@@ -87,8 +99,11 @@ void setup_oled() {
  
 void setup() {
   Serial.begin(9600);
-  setup_oled();
+    while (!Serial);     // do nothing until the serial monitor is opened
+
+
   setup_wifi();  
+  setup_oled();
  }
  
 void loop() {
