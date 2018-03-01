@@ -21,6 +21,14 @@
 #include <Bridge.h>
 #include <HttpClient.h>
 
+#include <ArduinoJson.h>
+
+
+
+
+
+
+
 #define OLED_SDA  2
 #define OLED_SCL 14
 #define OLED_RST  4
@@ -66,7 +74,7 @@ void info_esp() {
 }
 
 
-void setup_wifi() {
+void wifiSetup() {
 
   WiFi.mode(WIFI_AP_STA);
 
@@ -93,6 +101,29 @@ void setup_wifi() {
    TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
   #endif
 
+  
+
+  #if DEBUG_SERIAL_SUPPORT  
+   Serial.println("Wifi OK");
+  #endif 
+}
+
+
+#if OLED_SUPPORT
+
+void setup_oled() {
+ u8g2.begin();
+ u8g2.clearBuffer();          // clear the internal memory
+ u8g2.setFont(u8g2_font_5x8_mf); // choose a suitable font -- u8g2_font_8x13B_mf
+ u8g2.drawStr(0,7,TXT_WELCOME);  // write something to the internal memory
+ u8g2.sendBuffer();          // transfer internal memory to the display
+}
+
+#endif
+
+#if OTA_SUPPORT
+
+void otaSetup(){
   ArduinoOTA.onStart([]() {Serial.println("OTA starting...");});
   ArduinoOTA.onEnd([]() {Serial.println("OTA update finished!");Serial.println("Rebooting...");});
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {Serial.printf("OTA in progress: %u%%\r\n", (progress / (total / 100)));});  
@@ -105,33 +136,28 @@ void setup_wifi() {
     else if (error == OTA_END_ERROR) Serial.println("End Failed");
   });
   ArduinoOTA.begin();
-
-  #if DEBUG_SERIAL_SUPPORT  
-   Serial.println("Wifi OK");
-  #endif 
 }
 
-void setup_oled() {
- u8g2.begin();
- u8g2.clearBuffer();          // clear the internal memory
- u8g2.setFont(u8g2_font_5x8_mf); // choose a suitable font -- u8g2_font_8x13B_mf
- u8g2.drawStr(0,7,TXT_WELCOME);  // write something to the internal memory
- u8g2.sendBuffer();          // transfer internal memory to the display
-}
+#endif
  
 void setup() {
+  DEBUG_MSG_P(PSTR("\n\nsetup()\n\n"));
   Serial.begin(9600);
   while (!Serial);     // do nothing until the serial monitor is opened
+
+#if OLED_SUPPORT
   setup_oled();
-  setup_wifi();  
+#endif
+
+  wifiSetup();
+
+#if OTA_SUPPORT
+  otaSetup();
+#endif
 }
- 
-void loop() {
 
-
-
-/*
-
+void wifiScan(){
+  
 
   int n = WiFi.scanNetworks();
   Serial.println("scan done");
@@ -156,15 +182,9 @@ void loop() {
   }
   Serial.println("");
 
-  // Wait a bit before scanning again
-  delay(5000);
-
-
-
-*/
-
-
-
+}
+ 
+void loop() {
   ArduinoOTA.handle();
   u8g2.drawStr(0,0,text);  // write something to the internal memory
   IPAddress myip= WiFi.localIP();
