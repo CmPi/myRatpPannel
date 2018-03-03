@@ -6,5 +6,5 @@
 #define DEBUG_TELNET_SUPPORT   0
 #define TELNET_SUPPORT         0
 #define OTA_SUPPORT            0
-#define OLED_SUPPORT           0 
+#define OLED_SUPPORT           1 
 

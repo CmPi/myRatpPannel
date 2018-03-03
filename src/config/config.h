@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------------------
-//
+// VOTRE configuration
 //--------------------------------------------------------------------------------
 
 #define OTA true
@@ -24,3 +24,5 @@
 #define TRAFFIC_6 ""
 #define TRAFFIC_7 ""
 #define TRAFFIC_8 ""
+
+#define OLED_ROWS_NUM 3 // lines number (3 or 4)

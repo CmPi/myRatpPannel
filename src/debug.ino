@@ -6,6 +6,8 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
+#include "config/all.h"
+
 #if DEBUG_SUPPORT
 
 #include <stdio.h>
@@ -15,11 +17,6 @@ Copyright (C) 2016-2018 by Xose Pérez <xose dot perez at gmail dot com>
 extern "C" {
     #include "user_interface.h"
 }
-
-#if DEBUG_UDP_SUPPORT
-#include <WiFiUdp.h>
-WiFiUDP _udp_debug;
-#endif
 
 void _debugSend(char * message) {
 
@@ -37,28 +34,12 @@ void _debugSend(char * message) {
         DEBUG_PORT.printf(message);
     #endif
 
-    #if DEBUG_UDP_SUPPORT
-        #if SYSTEM_CHECK_ENABLED
-        if (systemCheck()) {
-        #endif
-            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            #if DEBUG_ADD_TIMESTAMP
-                _udp_debug.write(timestamp);
-            #endif
-            _udp_debug.write(message);
-            _udp_debug.endPacket();
-        #if SYSTEM_CHECK_ENABLED
-        }
-        #endif
-    #endif
-
     #if DEBUG_TELNET_SUPPORT
         #if DEBUG_ADD_TIMESTAMP
             _telnetWrite(timestamp, strlen(timestamp));
         #endif
         _telnetWrite(message, strlen(message));
     #endif
-
 
 }
 
@@ -173,57 +154,5 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
 }
 
-/**
- * Clears crash info
- */
-void debugClearCrashInfo() {
-    uint32_t crash_time = 0xFFFFFFFF;
-    EEPROM.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    EEPROM.commit();
-}
 
-/**
- * Print out crash information that has been previusly saved in EEPROM
- */
-void debugDumpCrashInfo() {
-
-    uint32_t crash_time;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
-        DEBUG_MSG_P(PSTR("[DEBUG] No crash info\n"));
-        return;
-    }
-
-    DEBUG_MSG_P(PSTR("[DEBUG] Crash at %lu ms\n"), crash_time);
-    DEBUG_MSG_P(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG_P(PSTR("[DEBUG] Exception cause: %u\n"), EEPROM.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
-
-    uint32_t epc1, epc2, epc3, excvaddr, depc;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
-    DEBUG_MSG_P(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
-    DEBUG_MSG_P(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
-
-    uint32_t stack_start, stack_end;
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROM.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
-    DEBUG_MSG_P(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
-    int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
-    int16_t stack_len = stack_end - stack_start;
-    uint32_t stack_trace;
-    for (int16_t i = 0; i < stack_len; i += 0x10) {
-        DEBUG_MSG_P(PSTR("%08x: "), stack_start + i);
-        for (byte j = 0; j < 4; j++) {
-            EEPROM.get(current_address, stack_trace);
-            DEBUG_MSG_P(PSTR("%08x "), stack_trace);
-            current_address += 4;
-        }
-        DEBUG_MSG_P(PSTR("\n[DEBUG] "));
-    }
-    DEBUG_MSG_P(PSTR("<<<stack<<<\n"));
-
-}
 #endif // DEBUG_SUPPORT
