@@ -56,15 +56,15 @@ void espInfo() {
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();
   FlashMode_t ideMode = ESP.getFlashChipMode();
-  Serial.printf("Flash real id:   %08X\n", ESP.getFlashChipId());
-  Serial.printf("Flash real size: %u\n\n", realSize);
-  Serial.printf("Flash ide  size: %u\n", ideSize);
-  Serial.printf("Flash ide speed: %u\n", ESP.getFlashChipSpeed());
-  Serial.printf("Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
+  DEBUG_MSG("Flash real id:   %08X\n", ESP.getFlashChipId());
+  DEBUG_MSG("Flash real size: %u\n\n", realSize);
+  DEBUG_MSG("Flash ide  size: %u\n", ideSize);
+  DEBUG_MSG("Flash ide speed: %u\n", ESP.getFlashChipSpeed());
+  DEBUG_MSG("Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
   if(ideSize != realSize) {
-    Serial.println("Flash Chip configuration wrong!\n");
+    DEBUG_MSG_P(PSTR("Flash Chip configuration wrong!\n"));
   } else {
-    Serial.println("Flash Chip configuration ok.\n");    
+    DEBUG_MSG_P(PSTR("Flash Chip configuration ok.\n"));    
   }
 }
 
@@ -74,8 +74,8 @@ void wifiSetup() {
   WiFi.mode(WIFI_AP_STA);
 
   #if DEBUG_SUPPORT
-   Serial.print("Connecting to ");
-   Serial.println(WIFI_SSID);
+   DEBUG_MSG_P(PSTR("Connecting to "));
+   DEBUG_MSG_P(PSTR(WIFI_SSID));
   #endif
 
  // WiFi.hostname(WIFI_HOSTNAME);
@@ -83,7 +83,7 @@ void wifiSetup() {
   while (WiFi.status() != WL_CONNECTED) {
     Scan();
     delay(500);
-    Serial.print(".");
+    DEBUG_MSG_P(PSTR("."));
   }
   
   #if DEBUG_SUPPORT
@@ -105,11 +105,11 @@ void wifiSetup() {
 #if OLED_SUPPORT
 
 void oledSetup() {
- u8g2.begin();
- u8g2.clearBuffer();          // clear the internal memory
- u8g2.setFont(OLED_FONT); // choose a suitable font -- u8g2_font_8x13B_mf
- u8g2.drawStr(0,OLED_ROWS_HEIGHT,TXT_WELCOME);  // write something to the internal memory
- u8g2.sendBuffer();          // transfer internal memory to the display
+  u8g2.begin();
+  u8g2.clearBuffer();          // clear the internal memory
+  u8g2.setFont(OLED_FONT); // choose a suitable font -- u8g2_font_8x13B_mf
+  u8g2.drawStr(0,OLED_ROWS_HEIGHT,TXT_WELCOME);  // write something to the internal memory
+  u8g2.sendBuffer();          // transfer internal memory to the display
 }
 
 #endif
@@ -134,16 +134,23 @@ void otaSetup(){
 #endif
  
 void setup() {
-  DEBUG_MSG_P(PSTR("\n\nsetup()\n\n"));
   Serial.begin(9600);
   while (!Serial);     // do nothing until the serial monitor is opened
+  DEBUG_MSG_P(PSTR("\n\nsetup()\n\n"));
   #if OLED_SUPPORT
-  oledSetup();
+    oledSetup();
+    u8g2.drawStr(0,2*OLED_ROWS_HEIGHT,text);  // write something to the internal memory
   #endif
   wifiSetup();
   #if OTA_SUPPORT
-  otaSetup();
+    otaSetup();
   #endif
+  #if OLED_SUPPORT  
+    IPAddress myip= WiFi.localIP();
+    String sFullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
+    u8g2.drawStr(0,3*OLED_ROWS_HEIGHT,sFullip.c_str());  // write something to the internal memory
+    u8g2.sendBuffer();          // transfer internal memory to the display
+  #endif    
 }
 
 void wifiScan(){
@@ -175,14 +182,6 @@ void loop() {
   #if OTA_SUPPORT
   ArduinoOTA.handle();
   #endif
-  #if OLED_SUPPORT  
-  u8g2.drawStr(0,2*OLED_ROWS_HEIGHT,text);  // write something to the internal memory
-  #endif  
-  IPAddress myip= WiFi.localIP();
-  String sFullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
-  #if OLED_SUPPORT  
-  u8g2.drawStr(0,3*OLED_ROWS_HEIGHT,sFullip.c_str());  // write something to the internal memory
-  u8g2.sendBuffer();          // transfer internal memory to the display
-  #endif  
-  delay(1000);  
+
+  delay(5000);  
 }
