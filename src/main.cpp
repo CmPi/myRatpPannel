@@ -38,8 +38,8 @@ const char *text = "cmpi_bus";  // scroll this text from right to left
 
 int iColScan = 64;
 
-const char* ssid = WIFI_SSID;
-const char* password = WIFI_PASSWORD;
+const char* ssid = WIFI_1_SSID;
+const char* password = WIFI_1_PASSWORD;
 
 //Necesary to make Arduino Software autodetect OTA device
 WiFiServer TelnetServer(8266);
@@ -74,8 +74,8 @@ void wifiSetup() {
   WiFi.mode(WIFI_AP_STA);
 
   #if DEBUG_SUPPORT
-   DEBUG_MSG_P(PSTR("Connecting to "));
-   DEBUG_MSG_P(PSTR(WIFI_SSID));
+    DEBUG_MSG_P(PSTR("Connecting to "));
+    DEBUG_MSG_P(PSTR(WIFI_1_SSID));
   #endif
 
  // WiFi.hostname(WIFI_HOSTNAME);
@@ -87,9 +87,9 @@ void wifiSetup() {
   }
   
   #if DEBUG_SUPPORT
-   DEBUG_MSG_P(PSTR("   IP address: "));
-   Serial.println(WiFi.localIP());
-   DEBUG_MSG_P(PSTR("Configuring OTA device..."));
+    DEBUG_MSG_P(PSTR("   IP address: "));
+    Serial.println(WiFi.localIP());
+    DEBUG_MSG_P(PSTR("Configuring OTA device..."));
   #endif
 
   #if TELNET_SUPPORT
