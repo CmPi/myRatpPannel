@@ -10,49 +10,51 @@
 
 #include "config/all.h"
 
-#include <ESP8266WiFi.h>  //For ESP8266
+#include <ESP8266WiFi.h> //For ESP8266
 
 #if OTA_SUPPORT
-  #include <ESP8266mDNS.h>  //For OTA
-  #include <WiFiUdp.h>      //For OTA
-  #include <ArduinoOTA.h>   //For 
+#include <ESP8266mDNS.h> //For OTA
+#include <WiFiUdp.h>     //For OTA
+#include <ArduinoOTA.h>  //For
 #endif
 
 #include <Arduino.h>
 
 #if OLED_SUPPORT
-  #include <U8g2lib.h>      // make sure to add U8g2 library and restart Arduino IDE  
-  #define OLED_SDA  2
-  #define OLED_SCL 14
-  #define OLED_RST  4
-  U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA , OLED_RST);
+#include <U8g2lib.h> // make sure to add U8g2 library and restart Arduino IDE
+#define OLED_SDA 2
+#define OLED_SCL 14
+#define OLED_RST 4
+U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, OLED_RST);
 #endif
 
 #include <Bridge.h>
 #include <HttpClient.h>
 
-const char *TXT_WELCOME  = APP_NAME "_" APP_VERSION ;  // µ scroll this text from right to left
-const char *TXT_HOSTNAME = "micro_ratp";  // scroll this text from right to left
+const char *TXT_WELCOME = APP_NAME "_" APP_VERSION; // µ scroll this text from right to left
+const char *TXT_HOSTNAME = "micro_ratp";            // scroll this text from right to left
 
-const char *text = "cmpi_bus";  // scroll this text from right to left
+const char *text = "cmpi_bus"; // scroll this text from right to left
 
 int iColScan = 64;
 
-const char* ssid = WIFI_1_SSID;
-const char* password = WIFI_1_PASSWORD;
+const char *ssid = WIFI_1_SSID;
+const char *password = WIFI_1_PASSWORD;
 
 //Necesary to make Arduino Software autodetect OTA device
 WiFiServer TelnetServer(8266);
 
-void Scan() {
- if (iColScan>OLED_COLS_NUM) // 112
-  iColScan = 0;
- u8g2.drawStr(iColScan*OLED_COLS_WIDTH,3*OLED_ROWS_HEIGHT," * ");  // write something to the internal memory
- u8g2.sendBuffer();          // transfer internal memory to the display
- iColScan=iColScan+2;  
+void Scan()
+{
+  if (iColScan > OLED_COLS_NUM) // 112
+    iColScan = 0;
+  u8g2.drawStr(iColScan * OLED_COLS_WIDTH, 3 * OLED_ROWS_HEIGHT, " * "); // write something to the internal memory
+  u8g2.sendBuffer();                                                     // transfer internal memory to the display
+  iColScan = iColScan + 2;
 }
 
-void espInfo() {
+void espInfo()
+{
   uint32_t realSize = ESP.getFlashChipRealSize();
   uint32_t ideSize = ESP.getFlashChipSize();
   FlashMode_t ideMode = ESP.getFlashChipMode();
@@ -61,99 +63,117 @@ void espInfo() {
   DEBUG_MSG("Flash ide  size: %u\n", ideSize);
   DEBUG_MSG("Flash ide speed: %u\n", ESP.getFlashChipSpeed());
   DEBUG_MSG("Flash ide mode:  %s\n", (ideMode == FM_QIO ? "QIO" : ideMode == FM_QOUT ? "QOUT" : ideMode == FM_DIO ? "DIO" : ideMode == FM_DOUT ? "DOUT" : "UNKNOWN"));
-  if(ideSize != realSize) {
+  if (ideSize != realSize)
+  {
     DEBUG_MSG_P(PSTR("Flash Chip configuration wrong!\n"));
-  } else {
-    DEBUG_MSG_P(PSTR("Flash Chip configuration ok.\n"));    
+  }
+  else
+  {
+    DEBUG_MSG_P(PSTR("Flash Chip configuration ok.\n"));
   }
 }
 
-
-void wifiSetup() {
+void wifiSetup()
+{
 
   WiFi.mode(WIFI_AP_STA);
 
-  #if DEBUG_SUPPORT
-    DEBUG_MSG_P(PSTR("Connecting to "));
-    DEBUG_MSG_P(PSTR(WIFI_1_SSID));
-  #endif
+#if DEBUG_SUPPORT
+  DEBUG_MSG_P(PSTR("Connecting to "));
+  DEBUG_MSG_P(PSTR(WIFI_1_SSID));
+#endif
 
- // WiFi.hostname(WIFI_HOSTNAME);
-  WiFi.begin( ssid, password );
-  while (WiFi.status() != WL_CONNECTED) {
+  // WiFi.hostname(WIFI_HOSTNAME);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Scan();
     delay(500);
     DEBUG_MSG_P(PSTR("."));
   }
-  
-  #if DEBUG_SUPPORT
-    DEBUG_MSG_P(PSTR("   IP address: "));
-    Serial.println(WiFi.localIP());
-    DEBUG_MSG_P(PSTR("Configuring OTA device..."));
-  #endif
 
-  #if TELNET_SUPPORT
-    TelnetServer.begin();   //Necesary to make Arduino Software autodetect OTA device  
-  #endif
+#if DEBUG_SUPPORT
+  DEBUG_MSG_P(PSTR("   IP address: "));
+  Serial.println(WiFi.localIP());
+  DEBUG_MSG_P(PSTR("Configuring OTA device..."));
+#endif
 
-  #if DEBUG_SUPPORT  
-    Serial.println("Wifi OK");
-  #endif 
+#if TELNET_SUPPORT
+  TelnetServer.begin(); //Necesary to make Arduino Software autodetect OTA device
+#endif
+
+#if DEBUG_SUPPORT
+  Serial.println("Wifi OK");
+#endif
 }
-
 
 #if OLED_SUPPORT
 
-void oledSetup() {
+void oledSetup()
+{
   u8g2.begin();
-  u8g2.clearBuffer();          // clear the internal memory
-  u8g2.setFont(OLED_FONT); // choose a suitable font -- u8g2_font_8x13B_mf
-  u8g2.drawStr(0,OLED_ROWS_HEIGHT,TXT_WELCOME);  // write something to the internal memory
-  u8g2.sendBuffer();          // transfer internal memory to the display
+  u8g2.clearBuffer();                             // clear the internal memory
+  u8g2.setFont(OLED_FONT);                        // choose a suitable font -- u8g2_font_8x13B_mf
+  u8g2.drawStr(0, OLED_ROWS_HEIGHT, TXT_WELCOME); // write something to the internal memory
+  u8g2.sendBuffer();                              // transfer internal memory to the display
 }
 
 #endif
 
 #if OTA_SUPPORT
 
-void otaSetup(){
-  ArduinoOTA.onStart([]() {Serial.println("OTA starting...");});
-  ArduinoOTA.onEnd([]() {Serial.println("OTA update finished!");Serial.println("Rebooting...");});
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {Serial.printf("OTA in progress: %u%%\r\n", (progress / (total / 100)));});  
+void otaSetup()
+{
+  ArduinoOTA.onStart([]() { Serial.println("OTA starting..."); });
+  ArduinoOTA.onEnd([]() {Serial.println("OTA update finished!");Serial.println("Rebooting..."); });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { Serial.printf("OTA in progress: %u%%\r\n", (progress / (total / 100))); });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    if (error == OTA_AUTH_ERROR)
+      Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR)
+      Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR)
+      Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR)
+      Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR)
+      Serial.println("End Failed");
   });
   ArduinoOTA.begin();
 }
 
 #endif
- 
-void setup() {
-  Serial.begin(9600);
-  while (!Serial);     // do nothing until the serial monitor is opened
-  DEBUG_MSG_P(PSTR("\n\nsetup()\n\n"));
-  #if OLED_SUPPORT
-    oledSetup();
-    u8g2.drawStr(0,2*OLED_ROWS_HEIGHT,text);  // write something to the internal memory
-  #endif
-  wifiSetup();
-  #if OTA_SUPPORT
-    otaSetup();
-  #endif
-  #if OLED_SUPPORT  
-    IPAddress myip= WiFi.localIP();
-    String sFullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
-    u8g2.drawStr(0,3*OLED_ROWS_HEIGHT,sFullip.c_str());  // write something to the internal memory
-    u8g2.sendBuffer();          // transfer internal memory to the display
-  #endif    
+void ratpSetup()
+{
+  //ici premier setup init
 }
 
-void wifiScan(){
+void setup()
+{
+  Serial.begin(9600);
+  while (!Serial)
+    ; // do nothing until the serial monitor is opened
+  DEBUG_MSG_P(PSTR("\n\nsetup()\n\n"));
+#if OLED_SUPPORT
+  oledSetup();
+  u8g2.drawStr(0, 2 * OLED_ROWS_HEIGHT, text); // write something to the internal memory
+#endif
+  wifiSetup();
+#if OTA_SUPPORT
+  otaSetup();
+#endif
+#if OLED_SUPPORT
+  IPAddress myip = WiFi.localIP();
+  String sFullip = String(myip[0]) + "." + myip[1] + "." + myip[2] + "." + myip[3];
+  u8g2.drawStr(0, 3 * OLED_ROWS_HEIGHT, sFullip.c_str()); // write something to the internal memory
+  u8g2.sendBuffer();                                      // transfer internal memory to the display
+#endif
+ratpSetup();
+}
+
+void wifiScan()
+{
   int n = WiFi.scanNetworks();
   Serial.println("scan done");
   if (n == 0)
@@ -171,17 +191,22 @@ void wifiScan(){
       Serial.print(" (");
       Serial.print(WiFi.RSSI(i));
       Serial.print(")");
-      Serial.println((WiFi.encryptionType(i) == ENC_TYPE_NONE)?" ":"*");
+      Serial.println((WiFi.encryptionType(i) == ENC_TYPE_NONE) ? " " : "*");
       delay(10);
     }
   }
   Serial.println("");
 }
- 
-void loop() {
-  #if OTA_SUPPORT
-  ArduinoOTA.handle();
-  #endif
 
-  delay(5000);  
+
+void ratploop(){
+
+}
+void loop()
+{
+#if OTA_SUPPORT
+  ArduinoOTA.handle();
+#endif
+  ratploop();
+  delay(5000);
 }
