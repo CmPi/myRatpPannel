@@ -11,7 +11,6 @@
 #include "config/all.h"
 
 #include <ESP8266WiFi.h> //For ESP8266
-
 #if OTA_SUPPORT
 #include <ESP8266mDNS.h> //For OTA
 #include <WiFiUdp.h>     //For OTA
@@ -19,6 +18,7 @@
 #endif
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 #if OLED_SUPPORT
 #include <U8g2lib.h> // make sure to add U8g2 library and restart Arduino IDE
@@ -30,6 +30,10 @@ U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, OLED_RS
 
 #include <Bridge.h>
 #include <HttpClient.h>
+#include <WiFiClientSecure.h>
+
+const char *hostUrl = "api-ratp.pierre-grimaud.fr";
+const int httpsPort = 443;
 
 const char *TXT_WELCOME = APP_NAME "_" APP_VERSION; // µ scroll this text from right to left
 const char *TXT_HOSTNAME = "micro_ratp";            // scroll this text from right to left
@@ -75,7 +79,6 @@ void espInfo()
 
 void wifiSetup()
 {
-
   WiFi.mode(WIFI_AP_STA);
 
 #if DEBUG_SUPPORT
@@ -144,9 +147,100 @@ void otaSetup()
 }
 
 #endif
+WiFiClientSecure client;
+
 void ratpSetup()
 {
-  //ici premier setup init
+  // Use WiFiClientSecure class to create TLS connection
+
+  String title = "";
+  String headers = "";
+  String body = "";
+  bool finishedHeaders = false;
+  bool currentLineIsBlank = true;
+  bool gotResponse = false;
+  long now;
+
+  char host[] = "api-ratp.pierre-grimaud.fr";
+
+  if (client.connect(host, 443))
+  {
+    Serial.println("connected");
+
+    String URL = "/v3/schedules/bus/131/les+coquettes/R";
+
+    Serial.println(URL);
+
+    client.println("GET " + URL + " HTTP/1.1");
+    client.print("Host: ");
+    client.println(host);
+    client.println("User-Agent: arduino/1.0");
+    client.println("");
+
+    now = millis();
+    // checking the timeout
+    while (millis() - now < 1500)
+    {
+      while (client.available())
+      {
+        char c = client.read();
+        //Serial.print(c);
+
+        if (finishedHeaders)
+        {
+          body = body + c;
+        }
+        else
+        {
+          if (currentLineIsBlank && c == '\n')
+          {
+            finishedHeaders = true;
+          }
+          else
+          {
+            headers = headers + c;
+          }
+        }
+
+        if (c == '\n')
+        {
+          currentLineIsBlank = true;
+        }
+        else if (c != '\r')
+        {
+          currentLineIsBlank = false;
+        }
+
+        //marking we got a response
+        gotResponse = true;
+      }
+      if (gotResponse)
+      {
+
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject &root = jsonBuffer.parseObject(body);
+        if (root.success())
+        {
+          if (root.containsKey("data"))
+          {
+            JsonObject &post = root["data"]["children"][0];
+            if (post.containsKey("data"))
+            {
+              title = post["data"]["title"].as<String>();
+            }
+          }
+        }
+        else
+        {
+          Serial.println("failed to parse JSON");
+        }
+
+        break;
+      }
+    }
+  }
+
+  Serial.println(body);
 }
 
 void setup()
@@ -169,7 +263,7 @@ void setup()
   u8g2.drawStr(0, 3 * OLED_ROWS_HEIGHT, sFullip.c_str()); // write something to the internal memory
   u8g2.sendBuffer();                                      // transfer internal memory to the display
 #endif
-ratpSetup();
+  ratpSetup();
 }
 
 void wifiScan()
@@ -198,15 +292,15 @@ void wifiScan()
   Serial.println("");
 }
 
-
-void ratploop(){
-
+void ratpLoop()
+{
 }
+
 void loop()
 {
 #if OTA_SUPPORT
   ArduinoOTA.handle();
 #endif
-  ratploop();
+  ratpLoop();
   delay(5000);
 }
