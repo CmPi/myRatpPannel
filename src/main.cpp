@@ -35,10 +35,12 @@ U8G2_SSD1306_128X32_UNIVISION_F_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA, OLED_RS
 const char *hostUrl = "api-ratp.pierre-grimaud.fr";
 const int httpsPort = 443;
 
-const char *TXT_WELCOME = APP_NAME "_" APP_VERSION; // µ scroll this text from right to left
+const char *TXT_WELCOME = APP_NAME " v" APP_VERSION; // µ scroll this text from right to left
 const char *TXT_HOSTNAME = "micro_ratp";            // scroll this text from right to left
 
 const char *text = "cmpi_bus"; // scroll this text from right to left
+
+char aOledRow[OLED_COLS_NUM];
 
 int iColScan = 64;
 
@@ -149,29 +151,22 @@ void otaSetup()
 #endif
 WiFiClientSecure client;
 
-void ratpSetup()
-{
-  // Use WiFiClientSecure class to create TLS connection
+// Peut rester quasi dans l'état
 
-  String title = "";
+String getJson( String sApi ) {
   String headers = "";
   String body = "";
   bool finishedHeaders = false;
   bool currentLineIsBlank = true;
   bool gotResponse = false;
   long now;
+  int iLevel = 0;
 
   char host[] = "api-ratp.pierre-grimaud.fr";
 
   if (client.connect(host, 443))
   {
-    Serial.println("connected");
-
-    String URL = "/v3/schedules/bus/131/les+coquettes/R";
-
-    Serial.println(URL);
-
-    client.println("GET " + URL + " HTTP/1.1");
+    client.println("GET " + sApi + " HTTP/1.1");
     client.print("Host: ");
     client.println(host);
     client.println("User-Agent: arduino/1.0");
@@ -185,10 +180,13 @@ void ratpSetup()
       {
         char c = client.read();
         //Serial.print(c);
-
+        if (c=='{')
+         iLevel++;
         if (finishedHeaders)
         {
-          body = body + c;
+          if (iLevel>0) {
+            body = body + c;
+          }
         }
         else
         {
@@ -211,36 +209,72 @@ void ratpSetup()
           currentLineIsBlank = false;
         }
 
+        if (c=='}')
+         iLevel--;
+
         //marking we got a response
         gotResponse = true;
-      }
-      if (gotResponse)
-      {
+      } // while
+    }
+  }
 
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject &root = jsonBuffer.parseObject(body);
+  return body;
+}
+
+// Affiche un String sur l'écran OLED
+
+void oledDraw( int iCol, int iRow, String sChaine ) {
+  sChaine.toCharArray(aOledRow,OLED_COLS_NUM);
+  u8g2.drawStr( iCol * OLED_COLS_WIDTH, iRow * OLED_ROWS_HEIGHT, aOledRow );
+  u8g2.sendBuffer();  
+}
+
+void ratpTest()
+{
+  String body = "";
+  String sDuree = "";
+
+  body = getJson("/v3/schedules/bus/131/les+coquettes/R");
+  if (body!="") {
+    Serial.println(body);
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject &root = jsonBuffer.parseObject(body);
         if (root.success())
         {
-          if (root.containsKey("data"))
+          if (root.containsKey("result"))
           {
-            JsonObject &post = root["data"]["children"][0];
-            if (post.containsKey("data"))
+            JsonObject &post = root["result"]["schedules"][0];
+              if (post.containsKey("destination"))
             {
-              title = post["data"]["title"].as<String>();
+              sDuree = post["destination"].as<String>();
+              Serial.println(sDuree);
+              oledDraw( 0, 3, sDuree  );
+          }
+            if (post.containsKey("message"))
+            {
+              sDuree = post["message"].as<String>();
+              Serial.println(sDuree);
+              if (sDuree=="A l'approche")
+               sDuree="appro";
+              if (sDuree=="A l'arret")
+               sDuree="arret";
+              oledDraw( OLED_COLS_NUM-2*5 -2, 3, " "+ sDuree + " " );
+          }
+            JsonObject &post2 = root["result"]["schedules"][1];
+            if (post2.containsKey("message"))
+            {
+              sDuree = post2["message"].as<String>();
+              Serial.println(sDuree);
+              oledDraw( OLED_COLS_NUM -1*5 -2, 3, " "+ sDuree + " " );
             }
+
           }
         }
         else
         {
           Serial.println("failed to parse JSON");
         }
-
-        break;
       }
-    }
-  }
-
-  Serial.println(body);
 }
 
 void setup()
@@ -251,7 +285,6 @@ void setup()
   DEBUG_MSG_P(PSTR("\n\nsetup()\n\n"));
 #if OLED_SUPPORT
   oledSetup();
-  u8g2.drawStr(0, 2 * OLED_ROWS_HEIGHT, text); // write something to the internal memory
 #endif
   wifiSetup();
 #if OTA_SUPPORT
@@ -263,7 +296,6 @@ void setup()
   u8g2.drawStr(0, 3 * OLED_ROWS_HEIGHT, sFullip.c_str()); // write something to the internal memory
   u8g2.sendBuffer();                                      // transfer internal memory to the display
 #endif
-  ratpSetup();
 }
 
 void wifiScan()
@@ -294,6 +326,7 @@ void wifiScan()
 
 void ratpLoop()
 {
+  ratpTest();
 }
 
 void loop()
@@ -302,5 +335,5 @@ void loop()
   ArduinoOTA.handle();
 #endif
   ratpLoop();
-  delay(5000);
+  delay(45000);
 }
